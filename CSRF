@@ -1,0 +1,45 @@
+public class CSRFProtection {
+    private static final int TOKEN_LENGTH = 32;
+
+    public static String generateToken() {
+        return SecureRandomUtil.generateToken(TOKEN_LENGTH);
+    }
+
+    public static boolean validateToken(String sessionToken, String requestToken) {
+        if (sessionToken == null || requestToken == null) {
+            return false;
+        }
+        return MessageDigest.isEqual(
+            sessionToken.getBytes(),
+            requestToken.getBytes()
+        );
+    }
+
+    public static class CSRFFilter implements Filter {
+        @Override
+        public void doFilter(ServletRequest request, ServletResponse response,
+                FilterChain chain) throws IOException, ServletException {
+            HttpServletRequest httpRequest = (HttpServletRequest) request;
+            HttpServletResponse httpResponse = (HttpServletResponse) response;
+
+            if (isStateChangingMethod(httpRequest.getMethod())) {
+                String sessionToken = (String) httpRequest.getSession()
+                    .getAttribute("csrf_token");
+                String requestToken = httpRequest.getHeader("X-CSRF-TOKEN");
+
+                if (!validateToken(sessionToken, requestToken)) {
+                    httpResponse.sendError(HttpServletResponse.SC_FORBIDDEN,
+                        "CSRF token validation failed");
+                    return;
+                }
+            }
+
+            chain.doFilter(request, response);
+        }
+
+        private boolean isStateChangingMethod(String method) {
+            return "POST".equals(method) || "PUT".equals(method) || 
+                   "DELETE".equals(method) || "PATCH".equals(method);
+        }
+    }
+}
