@@ -1,0 +1,150 @@
+import java.util.Random;
+
+class Sala {
+    private int numero;
+    private int capacidadMaxima = 4;
+    private int ocupacionActual = 0;
+    
+    public Sala(int numero) {
+        this.numero = numero;
+    }
+    
+    public boolean intentarEntrar() {
+        if (ocupacionActual < capacidadMaxima) {
+            ocupacionActual++;
+            return true;
+        }
+        return false;
+    }
+    
+    public void salir() {
+        ocupacionActual--;
+      
+    }
+    
+    public int getOcupacion() {
+        return ocupacionActual;
+    }
+    
+    public int getNumero() {
+        return numero;
+    }
+}
+
+class GestorReservas {
+    private Sala[] salas;
+    
+    public GestorReservas(int numSalas) {
+        salas = new Sala[numSalas];
+        for (int i = 0; i < numSalas; i++) {
+            salas[i] = new Sala(i + 1);
+        }
+    }
+    
+    public Sala[] getSalas() {
+        return salas;
+    }
+    
+    public boolean reservarSala(int numSala, String estudiante) {
+        Sala sala = salas[numSala];
+        if (sala.intentarEntrar()) {
+            System.out.printf("Estudiante %s ha entrado en sala %d (Ocupación: %d)\n",
+                estudiante, sala.getNumero(), sala.getOcupacion());
+            return true;
+        }
+        return false;
+    }
+}
+
+class Estudiante implements Runnable {
+    private String id;
+    private final GestorReservas gestor;
+    
+    public Estudiante(String id, GestorReservas gestor) {
+        this.id = id;
+        this.gestor = gestor;
+    }
+    
+    @Override
+    public void run() {
+        Random random = new Random();
+        while (true) {
+            int salaDeseada = random.nextInt(gestor.getSalas().length);
+            System.out.printf("Estudiante %s intenta entrar en sala %d\n", 
+                id, salaDeseada + 1);
+            
+            while (!gestor.reservarSala(salaDeseada, id)) {
+                try {
+                    Thread.sleep(1000); // Espera 1 segundo antes de reintentar
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+            }
+            
+            try {
+                // Utiliza la sala entre 1 y 5 segundos
+                Thread.sleep(1000 + random.nextInt(4000));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+            
+            gestor.getSalas()[salaDeseada].salir();
+            System.out.printf("Estudiante %s ha salido de sala %d\n", 
+                id, salaDeseada + 1);
+            
+            try {
+                // Espera entre 1 y 3 segundos antes de intentar entrar en otra sala
+                Thread.sleep(1000 + random.nextInt(2000));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+        }
+    }
+}
+
+class Monitor implements Runnable {
+    private final GestorReservas gestor;
+    
+    public Monitor(GestorReservas gestor) {
+        this.gestor = gestor;
+    }
+    
+    @Override
+    public void run() {
+        while (true) {
+            try {
+                Thread.sleep(5000);
+                System.out.println("\n=== Estado de ocupación ===");
+                for (Sala sala : gestor.getSalas()) {
+                    System.out.printf("Sala %d: %d personas\n",
+                        sala.getNumero(), sala.getOcupacion());
+                }
+                System.out.println("========================\n");
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+        }
+    }
+}
+
+public class ControlSalas {
+    public static void main(String[] args) {
+        GestorReservas gestor = new GestorReservas(3);
+        Thread[] estudiantes = new Thread[10];
+        
+        for (int i = 0; i < estudiantes.length; i++) {
+            estudiantes[i] = new Thread(
+                new Estudiante("E" + (i + 1), gestor)
+            );
+            estudiantes[i].start();
+        }
+        
+        // Monitor de ocupación
+        Thread monitorThread = new Thread(new Monitor(gestor));
+        monitorThread.start();
+    }
+}
