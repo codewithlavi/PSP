@@ -1,0 +1,38 @@
+//Control de Acceso Basado en Roles (RBAC)
+
+public class RBACManager {
+    private static final Map> userRoles = new ConcurrentHashMap<>();
+    private static final Map> rolePermissions = new ConcurrentHashMap<>();
+
+    public static void addUserRole(String userId, String role) {
+        userRoles.computeIfAbsent(userId, k -> new HashSet<>()).add(role);
+    }
+
+    public static void addRolePermission(String role, String permission) {
+        rolePermissions.computeIfAbsent(role, k -> new HashSet<>()).add(permission);
+    }
+
+    public static boolean hasPermission(String userId, String permission) {
+        Set roles = userRoles.get(userId);
+        if (roles == null) return false;
+
+        return roles.stream()
+            .anyMatch(role -> {
+                Set permissions = rolePermissions.get(role);
+                return permissions != null && permissions.contains(permission);
+            });
+    }
+
+    @FunctionalInterface
+    public interface SecuredOperation {
+        void execute() throws SecurityException;
+    }
+
+    public static void requirePermission(String userId, String permission, 
+            SecuredOperation operation) {
+        if (!hasPermission(userId, permission)) {
+            throw new SecurityException("Access denied");
+        }
+        operation.execute();
+    }
+}
