@@ -1,0 +1,35 @@
+import javax.net.ssl.*;
+import java.security.*;
+
+public class TLSConfig {
+    public static SSLContext createSSLContext() throws Exception {
+        // Crear KeyStore
+        KeyStore keyStore = KeyStore.getInstance("PKCS12");
+        keyStore.load(
+            new FileInputStream("keystore.p12"),
+            "password".toCharArray()
+        );
+
+        // Configurar KeyManagerFactory
+        KeyManagerFactory kmf = KeyManagerFactory.getInstance(
+            KeyManagerFactory.getDefaultAlgorithm()
+        );
+        kmf.init(keyStore, "password".toCharArray());
+
+        // Configurar TrustManagerFactory
+        TrustManagerFactory tmf = TrustManagerFactory.getInstance(
+            TrustManagerFactory.getDefaultAlgorithm()
+        );
+        tmf.init(keyStore);
+
+        // Crear y configurar SSLContext
+        SSLContext sslContext = SSLContext.getInstance("TLS");
+        sslContext.init(
+            kmf.getKeyManagers(),
+            tmf.getTrustManagers(),
+            new SecureRandom()
+        );
+
+        return sslContext;
+    }
+}
