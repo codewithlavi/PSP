@@ -1,1 +1,50 @@
+//Sesion Manager 
+public class SessionManager {
+    private static final int SESSION_TIMEOUT = 30 * 60; // 30 minutos
+    private static final Map sessions = new ConcurrentHashMap<>();
+
+    public static class Session {
+        private final String id;
+        private final String userId;
+        private final Map attributes;
+        private final long creationTime;
+        private long lastAccessTime;
+
+        public Session(String userId) {
+            this.id = generateSessionId();
+            this.userId = userId;
+            this.attributes = new ConcurrentHashMap<>();
+            this.creationTime = System.currentTimeMillis();
+            this.lastAccessTime = this.creationTime;
+        }
+
+        private String generateSessionId() {
+            return UUID.randomUUID().toString() + 
+                   SecureRandomUtil.generateToken(32);
+        }
+    }
+
+    public static Session createSession(String userId) {
+        Session session = new Session(userId);
+        sessions.put(session.id, session);
+        return session;
+    }
+
+    public static void invalidateSession(String sessionId) {
+        sessions.remove(sessionId);
+    }
+
+    public static boolean isValidSession(String sessionId) {
+        Session session = sessions.get(sessionId);
+        if (session == null) return false;
+
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - session.lastAccessTime > SESSION_TIMEOUT * 1000) {
+            invalidateSession(sessionId);
+            return false;
+        }
+
+        session.lastAccessTime = currentTime;
+        return true;
+    }
 
