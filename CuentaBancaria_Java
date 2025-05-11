@@ -1,0 +1,78 @@
+class CuentaBancaria {
+    private double saldo;
+    private String nombreBanco;
+
+    CuentaBancaria(double saldo, String nombreBanco){
+        this.saldo = saldo;
+        this.nombreBanco = nombreBanco;
+    }
+
+    public synchronized double getSaldo() {
+        return this.saldo;
+    }
+
+    public synchronized void depositar (int idCliente, double cantidad){
+        System.out.printf("Cliente %d intenta depositar: %.2f euros\n", idCliente, cantidad);
+        double saldoAnterior = this.getSaldo();
+        this.saldo += cantidad;
+        System.out.printf("Cliente %d despositó: %.2f euros\n", idCliente, cantidad);
+        System.out.printf("Saldo anterior: %.2f euros, Nuevo saldo: %.2f euros\n\n", saldoAnterior, this.getSaldo());
+    }
+
+    public synchronized void retirar(int idCliente, double cantidad){
+        System.out.printf("Cliente %d intenta retirar: %.2f euros\n", idCliente, cantidad);
+        double saldoAnterior = this.getSaldo();
+        this.saldo -= cantidad;
+        System.out.printf("Cliente %d retiró: %.2f euros\n", idCliente, cantidad);
+        System.out.printf("Saldo anterior: %.2f euros, Nuevo saldo: %.2f euros\n\n", saldoAnterior, this.getSaldo());
+    }
+}
+
+class Cliente implements Runnable {
+    private final CuentaBancaria cuenta;
+    private int idCliente;
+
+    Cliente(CuentaBancaria cuenta, int idCliente){
+        this.cuenta = cuenta;
+        this.idCliente = idCliente;
+    }
+
+    @Override
+    public void run() {
+        for(int i = 0; i < 3; i++){
+            if(Math.random() < 0.5) {
+                cuenta.depositar(idCliente, 100);
+            }
+            else {
+                cuenta.retirar(idCliente, 100);
+            }
+            try {
+                Thread.sleep((long) Math.random()*1000);
+            } catch (Exception e) {
+                // TODO: handle exception
+            }
+
+        }
+    }
+}
+
+public class Banco {
+    public static void main(String[] args) {
+        CuentaBancaria cuenta = new CuentaBancaria(500, "BBVA");
+        Thread[] clientes = new Thread[5];
+
+        for(int i = 0; i < 5; i++){
+            clientes[i] = new Thread(new Cliente(cuenta, i+1));
+            clientes[i].start();
+        }
+        for(Thread cliente: clientes){
+            try {
+                cliente.join();
+            } catch (Exception e) {
+                // TODO: handle exception
+            }
+        }
+
+        System.out.println("Saldo final: " + cuenta.getSaldo());
+    }
+}
