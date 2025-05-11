@@ -1,4 +1,5 @@
-//Sesion Manager 
+//Sesion Manager //Gestión de Sesiones//
+
 public class SessionManager {
     private static final int SESSION_TIMEOUT = 30 * 60; // 30 minutos
     private static final Map sessions = new ConcurrentHashMap<>();
