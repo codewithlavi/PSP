@@ -1,0 +1,29 @@
+public class SecureLogger {
+    private static final Logger logger = LoggerFactory.getLogger(SecureLogger.class);
+    private static final Pattern SENSITIVE_DATA = 
+        Pattern.compile("\\b(password|credit_card|ssn)\\b", 
+        Pattern.CASE_INSENSITIVE);
+
+    public static void logInfo(String message) {
+        logger.info(sanitizeLog(message));
+    }
+
+    public static void logError(String message, Throwable error) {
+        logger.error(sanitizeLog(message), error);
+    }
+
+    private static String sanitizeLog(String message) {
+        if (message == null) return null;
+        return SENSITIVE_DATA.matcher(message).replaceAll("[REDACTED]");
+    }
+
+    public static void auditLog(String userId, String action, String resource) {
+        String logMessage = String.format(
+            "User: %s, Action: %s, Resource: %s, Time: %s, IP: %s",
+            userId, action, resource, 
+            LocalDateTime.now(), getCurrentIP()
+        );
+        logger.info("AUDIT: " + logMessage);
+    }
+}
+        
