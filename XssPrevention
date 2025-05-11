@@ -1,0 +1,24 @@
+public class XSSPrevention {
+    public static String sanitizeHTML(String input) {
+        return Encode.forHtml(input);
+    }
+
+    public static String sanitizeJavaScript(String input) {
+        return Encode.forJavaScript(input);
+    }
+
+    public static String sanitizeURL(String input) {
+        return Encode.forUri(input);
+    }
+
+    public static class XSSFilter implements Filter {
+        @Override
+        public void doFilter(ServletRequest request, ServletResponse response,
+                FilterChain chain) throws IOException, ServletException {
+            HttpServletRequest httpRequest = (HttpServletRequest) request;
+            XSSRequestWrapper wrapper = new XSSRequestWrapper(httpRequest);
+            chain.doFilter(wrapper, response);
+        }
+    }
+}
+        
