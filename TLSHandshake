@@ -1,0 +1,33 @@
+public class TLSHandshake {
+    private SSLSocket createSecureSocket(String host, int port) 
+            throws Exception {
+        SSLContext context = TLSConfig.createSSLContext();
+        SSLSocketFactory factory = context.getSocketFactory();
+        
+        SSLSocket socket = (SSLSocket) factory.createSocket(host, port);
+        
+        // Configurar protocolos permitidos
+        socket.setEnabledProtocols(new String[] {"TLSv1.2", "TLSv1.3"});
+        
+        // Configurar cipher suites
+        socket.setEnabledCipherSuites(
+            getSecureCipherSuites(socket.getSupportedCipherSuites())
+        );
+        
+        return socket;
+    }
+
+    private String[] getSecureCipherSuites(String[] supported) {
+        List secure = new ArrayList<>();
+        for (String suite : supported) {
+            // Seleccionar solo cipher suites seguros
+            if (suite.contains("_GCM_") || 
+                suite.contains("_CHACHA20_") ||
+                suite.contains("_ECDHE_")) {
+                secure.add(suite);
+            }
+        }
+        return secure.toArray(new String[0]);
+    }
+}
+        
